@@ -5,8 +5,6 @@ from scanSNRlibV2 import *
 import os
 import pickle
 from numpy import argsort, sqrt#, linspace
-#from scipy.interpolate import spline
-#import webpageGenerateLib as webGen
 from plotClustersLib import returnMatrixFilePath, plotClusterInfo_v2, getPixelInfo, getFrequencyInfo
 import matplotlib as mpl
 mpl.use('Agg')
@@ -52,8 +50,6 @@ minLim = None
 reload_data = False
 eventSNR = False
 
-secondPlotDir = True
-
 background_only = True
 
 triggerNumber = 2471
@@ -93,7 +89,7 @@ def verbosePrint(string, switch = verbose):
 print("Parsing commandline arguments")
 
 def load_snr_object(base_dir):
-    snr_file = glueFileLocation(base_dir, "SNR_data/SNR_data.txt")
+    snr_file = os.path.join(base_dir, "SNR_data/SNR_data.txt")
     directory_exists = os.path.isfile(snr_file)
     if directory_exists and not reload_data:
         print("Loading previously saved data...")
@@ -101,16 +97,11 @@ def load_snr_object(base_dir):
             run_info = pickle.load(infile)
     else:
         if not directory_exists:
-            os.mkdir(glueFileLocation(base_dir, "SNR_data"))
+            os.mkdir(os.path.join(base_dir, "SNR_data"))
         run_info = search_run_info_no_alphas_v2(base_dir)
         with open(snr_file, "wb") as outfile:
            pickle.dump(run_info, outfile)
     return run_info
-
-#def interp_line(x_data, y_data, points = 100):
-#    y_interp = linspace(min(y_data), max(y_data), points)
-#    x_interp = spline(y_data, x_data, y_interp)
-#    return x_interp, y_interp
 
 fileName4 = "runDataActual.txt"
 
@@ -169,24 +160,16 @@ eventSNRs = []
 pseudoEventSNRs = []
 
 print("Loading data...")
-#runInfo = search_run_info_no_alphas_v2(baseDir)
 runInfo = load_snr_object(baseDir)
 print("Data loaded")
 if comparison_plot:
     print("Loading new background data...")
-    #simulatedRunInfo = [search_run_info_no_alphas_v2(x) for x in baseSimDirs.split(',')]
     simulatedRunInfo = [load_snr_object(x) for x in [new_background_baseDir]]
-    #simulatedRunInfo = search_run_info_no_alphas(baseSimDir)
     print("New background data loaded")
 else:
     print("Loading simulated data...")
-    #simulatedRunInfo = [search_run_info_no_alphas_v2(x) for x in baseSimDirs.split(',')]
     simulatedRunInfo = [load_snr_object(x) for x in baseSimDirs.split(',')]
-    #simulatedRunInfo = search_run_info_no_alphas(baseSimDir)
     print("Simulated data loaded")
-#print("Loading second simulated data...")
-#simulatedRunInfo2 = search_run_info_no_alphas(baseSimDir2)
-#print("Second simulated data loaded")
 if eventSNRdir:
     print("Loading event data...")
     eventRunInfo = load_snr_object(eventSNRdir)
@@ -196,7 +179,6 @@ if pseudoEventSNRdir:
     pseudoEventRunInfo = load_snr_object(pseudoEventSNRdir)
     print("Pseudo event data loaded")
 
-#loudestSNRs = runInfo.get_high_snrs()
 print("Pulling snrs...")
 allSNRs = runInfo.get_snrs()
 allSimulatedSNRs = [x.get_snrs() for x in simulatedRunInfo]
@@ -204,9 +186,6 @@ if eventSNRdir:
     eventSNRs += eventRunInfo.get_snrs()
 if pseudoEventSNRdir:
     pseudoEventSNRs += pseudoEventRunInfo.get_snrs()
-#allSimulatedSNRs2 = simulatedRunInfo2.get_snrs()
-#print(allSNRs)
-#temp = runInfo.get_data()
 print("Done")
 
 allData = runInfo.get_data(False)
@@ -221,24 +200,8 @@ sortedSimulatedIndices = [argsort([x[0] for x in y]) for y in allSimulatedDataSo
 allSimulatedDataSorted = [[allSimulatedDataSorted[x][index] for index in sortedSimulatedIndices[x]] for x in range(len(sortedSimulatedIndices))]
 allSimulatedDataSorted = [x[::-1] for x in allSimulatedDataSorted]
 
-#allSimulatedData2 = simulatedRunInfo2.get_data(False)
-#allSimulatedDataSorted2 = [[group[2][jobNum], group[0][jobNum], group[1][jobNum]] for group in allSimulatedData2 for jobNum in range(len(group[0]))]
-#sortedSimulatedIndices2 = argsort([x[0] for x in allSimulatedDataSorted2])
-#allSimulatedDataSorted2 = [allSimulatedDataSorted2[index] for index in sortedSimulatedIndices2]
-#allSimulatedDataSorted2 = allSimulatedDataSorted2[::-1]
-
-#print(temp[1][0])
-#print(temp[1][2])
-
-# create directory
-#dir_name = glueFileLocation(options.outputDirectory, "simulated_vs_actual_SNR_comparison")
-#dir_name = create_dir(dir_name)
-##dir_name = "/home/quitzow/public_html/Magnetar/open_box/sgr_trigger_2469/stochtrack/plot"
-
-##fileName4 = "runDataActual.txt"
-#output_text3 = "\n".join("\n".join(", ".join(str(x) for x in [group[2][jobNum], group[0][jobNum], group[1][jobNum]]) for jobNum in range(len(group[0]))) for group in allData)
 output_text4 = "\n".join(", ".join(str(x) for x in line) for line in allDataSorted)#[::-1])
-with open(glueFileLocation(dir_name, fileName4), "w") as outfile:
+with open(os.path.join(dir_name, fileName4), "w") as outfile:
     outfile.write(output_text4)
 
 for simNum in range(len(allSimulatedDataSorted)):
@@ -246,32 +209,18 @@ for simNum in range(len(allSimulatedDataSorted)):
         fileName5 = "runData_new_background_" + str(simNum) + ".txt"
     else:
         fileName5 = "runDataSimulated_" + str(simNum) + ".txt"
-    #output_text3 = "\n".join("\n".join(", ".join(str(x) for x in [group[2][jobNum], group[0][jobNum], group[1][jobNum]]) for jobNum in range(len(group[0]))) for group in allData)
     output_text5 = "\n".join(", ".join(str(x) for x in line) for line in allSimulatedDataSorted[simNum])#[::-1])
-    with open(glueFileLocation(dir_name, fileName5), "w") as outfile:
+    with open(os.path.join(dir_name, fileName5), "w") as outfile:
         outfile.write(output_text5)
-
-#fileName6 = "runDataSimulated2.txt"
-#output_text3 = "\n".join("\n".join(", ".join(str(x) for x in [group[2][jobNum], group[0][jobNum], group[1][jobNum]]) for jobNum in range(len(group[0]))) for group in allData)
-#output_text6 = "\n".join(", ".join(str(x) for x in line) for line in allSimulatedDataSorted2)#[::-1])
-#with open(glueFileLocation(dir_name, fileName6), "w") as outfile:
-#    outfile.write(output_text6)
 
 sortedAllSNRs = allSNRs[:]
 sortedAllSNRs.sort()
-#all_percentage = [100 - (x)/len(sortedAllSNRs)*100 for x in range(len(sortedAllSNRs))]
 all_percentage = [1 - (x)/len(sortedAllSNRs) for x in range(len(sortedAllSNRs))]
 
 sortedAllSimulatedSNRs = [x[:] for x in allSimulatedSNRs]
 for x in sortedAllSimulatedSNRs:
     x.sort()
-#sortedAllSimulatedSNRs.sort()
-#allSimulated_percentage = [100 - (x)/len(sortedAllSimulatedSNRs)*100 for x in range(len(sortedAllSNRs))]
 allSimulated_percentage = [[1 - (x)/len(y) for x in range(len(y))] for y in sortedAllSimulatedSNRs]
-
-#sortedAllSimulatedSNRs2 = allSimulatedSNRs2[:]
-#sortedAllSimulatedSNRs2.sort()
-#allSimulated_percentage2 = [1 - (x)/len(sortedAllSimulatedSNRs2) for x in range(len(sortedAllSNRs))]
 
 numSimulations = len(sortedAllSimulatedSNRs)
 numJobs = len(sortedAllSimulatedSNRs[0])
@@ -284,19 +233,6 @@ sigmaTwoSimSNRHigh = [meanSimulatedSNR[jobIndex] + stDevSimulatedSNR[jobIndex]*2
 sigmaThreeSimSNRLow = [meanSimulatedSNR[jobIndex] - stDevSimulatedSNR[jobIndex]*3 for jobIndex in range(numJobs)]
 sigmaThreeSimSNRHigh = [meanSimulatedSNR[jobIndex] + stDevSimulatedSNR[jobIndex]*3 for jobIndex in range(numJobs)]
 
-"""sigmaOneSimSNRLow_interp, all_percentage_interp = interp_line(sigmaOneSimSNRLow, all_percentage)
-print(min(all_percentage_interp))
-print(max(all_percentage_interp))
-print(min(sigmaOneSimSNRLow))
-print(max(sigmaOneSimSNRLow))
-print(min(sigmaOneSimSNRLow_interp))
-print(max(sigmaOneSimSNRLow_interp))
-sigmaOneSimSNRHigh_interp, all_percentage_interp = interp_line(sigmaOneSimSNRHigh, all_percentage)
-sigmaTwoSimSNRLow_interp, all_percentage_interp = interp_line(sigmaTwoSimSNRLow, all_percentage)
-sigmaTwoSimSNRHigh_interp, all_percentage_interp = interp_line(sigmaTwoSimSNRHigh, all_percentage)
-sigmaThreeSimSNRLow_interp, all_percentage_interp = interp_line(sigmaThreeSimSNRLow, all_percentage)
-sigmaThreeSimSNRHigh_interp, all_percentage_interp = interp_line(sigmaThreeSimSNRHigh, all_percentage)"""
-
 if eventSNR:
     eventSNRs += [float(x) for x in eventSNR.split(',')]
 if comparison_plot:
@@ -307,21 +243,6 @@ if comparison_plot:
 else:
     eventPercentages = [min([all_percentage[x] for x in range(len(all_percentage)) if sortedAllSNRs[x] <= y]) for y in eventSNRs]
     pseudoEventPercentages = [min([all_percentage[x] for x in range(len(all_percentage)) if sortedAllSNRs[x] <= y]) for y in pseudoEventSNRs]
-#else:
-#    eventSNRs = []
-#    eventPercentages = []
-
-"""print([[all_percentage[x] for x in range(len(all_percentage)) if sortedAllSNRs[x] <= y] for y in eventSNRs])
-print(len(all_percentage))
-print(all_percentage[0])
-print(all_percentage[10])
-print([[all_percentage[x] for x in range(len(all_percentage)) if all_percentage[x] > 0.99] for y in eventSNRs])
-print([all_percentage[x] for x in range(len(all_percentage)) if all_percentage[x] > 0.99])
-print(all_percentage[:10])
-print(all_percentage[10])
-print([all_percentage[-1]])
-print([all_percentage[0]])
-print([all_percentage[1]])"""
 
 verbosePrint("Lowest SNR of time-shifted data: " + str(min(sortedAllSNRs)))
 minimumSimSNRS = [min(x) for x in sortedAllSimulatedSNRs]
@@ -336,55 +257,9 @@ page_width = 8.5
 page_width = 6
 plot_width = page_width - 2*required_margins
 
-"""
-#plt.grid(b=True, which='minor',color='0.85',linestyle='--')
-#plt.grid(b=True, which='major',color='0.75',linestyle='-')
-#fig = plt.figure(figsize=(3,4))
-plt.grid(b=True, which='minor',linestyle='--', linewidth = 0.125)
-plt.grid(b=True, which='major',linestyle='-', linewidth = 0.125)
-plt.fill_betweenx(all_percentage, sigmaOneSimSNRLow, sigmaOneSimSNRHigh, color='grey', alpha='0.7', linewidth = 0.0)#, zorder = 3)
-plt.fill_betweenx(all_percentage, sigmaTwoSimSNRLow, sigmaOneSimSNRLow, color='grey', alpha='0.5', linewidth = 0.0)#, zorder = 3)
-plt.fill_betweenx(all_percentage, sigmaTwoSimSNRHigh, sigmaOneSimSNRHigh, color='grey', alpha='0.5', linewidth = 0.0)#, zorder = 3)
-plt.fill_betweenx(all_percentage, sigmaTwoSimSNRLow, sigmaThreeSimSNRLow, color='grey', alpha='0.3', linewidth = 0.0)#, zorder = 3)
-plt.fill_betweenx(all_percentage, sigmaTwoSimSNRHigh, sigmaThreeSimSNRHigh, color='grey', alpha='0.3', linewidth = 0.0)#, zorder = 3)
-simulationLine, = plt.plot(sortedAllSimulatedSNRs[0], allSimulated_percentage[0],'-', label = "Gaussian Simulations", color = colours[1])#, alpha = 0.5)#, zorder = 4)
-if len(sortedAllSimulatedSNRs) > 1:
-    for num in range(1,len(sortedAllSimulatedSNRs)):
-        plt.plot(sortedAllSimulatedSNRs[num], allSimulated_percentage[num],'-', color = colours[1])#, alpha = 0.5)#, zorder = 4)
-meanLine, = plt.plot(meanSimulatedSNR, all_percentage,'k--', label = "Simulation Mean")#, zorder = 6)
-backgroundLine, = plt.plot(sortedAllSNRs, all_percentage,'-', label = "Background", linewidth = 1.5, color = colours[0])#, zorder = 5)
-if pseudoEventSNRs:
-    plt.plot(pseudoEventSNRs, pseudoEventPercentages,'b^', label = "Dummy On-Source")
-if eventSNRs:
-    eventLine, = plt.plot(eventSNRs, eventPercentages,'ro', zorder = 6, label = "On-Source Event", markeredgecolor = "r")#, color = colours[5])
-plt.xlabel("SNR")
-ymin = min(all_percentage)
-plt.ylim([ymin,1])
-plt.yscale('log')
-legend = plt.legend([backgroundLine, simulationLine, meanLine, eventLine], ["Background", "Gaussian Simulations", "Simulation Mean", "On-Source Event"], prop={'size':12})
-#legend.get_frame().set_alpha(0.5)
-plt.rc('text', usetex = True)
-#plt.rc('text.latex', preamble = '\usepackage[T1]{fontenc}')
-plt.rc('font', family = 'sarif')
-#plt.rc('font', serif = 'Palatino')
-plt.rc('font', serif = 'Computer Modern')
-plt.ylabel("False Alarm Probability")
-plt.savefig(dir_name + "/SNRvsFAP_all_clusters_semilogy_average_2.pdf", bbox_inches = 'tight', format='pdf')
-#plt.savefig(dir_name + "/SNRvsFAP_all_clusters_semilogy_average_2", bbox_inches = 'tight')
-plt.clf()
-#"""
-
 if not comparison_plot:
-    print("I'm using a quick and dirty get around to make the axes tick numbers be the right size. This also means the labels are also the same style. This may or may not be a good thing. People may prefer bolded axes labels.")
-    #plt.grid(b=True, which='minor',color='0.85',linestyle='--')
-    #plt.grid(b=True, which='major',color='0.75',linestyle='-')
-    ##plot_size = 5
-    #fig = plt.figure(figsize=(8,6))
-    #fig = plt.figure(figsize=(plot_size*1.61803398875,plot_size))
-    #fig = plt.figure(figsize=(plot_width, plot_width/1.61803398875))
     fig = plt.figure(figsize=(plot_width, plot_width*3/4))
     ax1 = fig.add_subplot(111)
-    #ax1.grid(b=True, which='minor',linestyle='--', alpha = 1-0.85)
     ax1.grid(b=True, which='minor',linestyle=':', alpha = 1-0.85)
     ax1.grid(b=True, which='major',linestyle='-', alpha = 1-0.75)
     if dots:
@@ -397,76 +272,44 @@ if not comparison_plot:
         ax1.plot(sortedAllSimulatedSNRs, allSimulated_percentage,'g.--', label = "Monte Carlo Simulations")
         ax1.plot(sortedAllSimulatedSNRs2, allSimulated_percentage2,'g.--')
     else:
-        ##ax1.fill_betweenx(all_percentage, sigmaOneSimSNRLow, sigmaOneSimSNRHigh, color='grey', alpha='0.7', linewidth = 0.0)#, zorder = 3)
-        ##ax1.fill_betweenx(all_percentage, sigmaTwoSimSNRLow, sigmaOneSimSNRLow, color='grey', alpha='0.5', linewidth = 0.0)#, zorder = 3)
-        ##ax1.fill_betweenx(all_percentage, sigmaTwoSimSNRHigh, sigmaOneSimSNRHigh, color='grey', alpha='0.5', linewidth = 0.0)#, zorder = 3)
-        ##ax1.fill_betweenx(all_percentage, sigmaTwoSimSNRLow, sigmaThreeSimSNRLow, color='grey', alpha='0.3', linewidth = 0.0)#, zorder = 3)
-        ##ax1.fill_betweenx(all_percentage, sigmaTwoSimSNRHigh, sigmaThreeSimSNRHigh, color='grey', alpha='0.3', linewidth = 0.0)#, zorder = 3)
         plt.fill_betweenx(all_percentage, sigmaOneSimSNRLow, sigmaOneSimSNRHigh, color=str(1 - 0.5*0.7), linewidth = 0.0)#'grey', alpha='0.7', linewidth = 0.0)#, zorder = 3)
         plt.fill_betweenx(all_percentage, sigmaTwoSimSNRLow, sigmaOneSimSNRLow, color=str(1 - 0.5*0.5), linewidth = 0.0)#'grey', alpha='0.3')#'0.5', linewidth = 0.0)#, zorder = 3)
         plt.fill_betweenx(all_percentage, sigmaTwoSimSNRHigh, sigmaOneSimSNRHigh, color=str(1 - 0.5*0.5), linewidth = 0.0)#color='grey')#, alpha='0.5', linewidth = 0.0)#, zorder = 3)
         plt.fill_betweenx(all_percentage, sigmaTwoSimSNRLow, sigmaThreeSimSNRLow, color=str(1 - 0.5*0.3), linewidth = 0.0)#'grey', alpha='0.3', linewidth = 0.0)#, zorder = 3)
         plt.fill_betweenx(all_percentage, sigmaTwoSimSNRHigh, sigmaThreeSimSNRHigh, color=str(1 - 0.5*0.3), linewidth = 0.0)#, alpha='0.3')#, linewidth = None)#0.0)#, zorder = 3)
-        ##simulationLine, = ax1.plot(sortedAllSimulatedSNRs[0], allSimulated_percentage[0],'-', label = "Gaussian Simulations", color = colours[1])#, alpha = 0.5)#, zorder = 4)
-        ##simulationLine, = ax1.plot(sortedAllSimulatedSNRs[0], allSimulated_percentage[0],'-', label = "Gaussian Simulations", color = colours[4])#, alpha = 0.5)#, zorder = 4)
-        simulationLine, = ax1.plot(sortedAllSimulatedSNRs[0], allSimulated_percentage[0],'-', label = "Simulated Backgrounds", color = colours[4])#, alpha = 0.5)#, zorder = 4)
+        simulationLine, = ax1.plot(sortedAllSimulatedSNRs[0], allSimulated_percentage[0],'-', label = "Gaussian Simulations", color = colours[4])#, alpha = 0.5)#, zorder = 4)
         if len(sortedAllSimulatedSNRs) > 1:
             for num in range(1,len(sortedAllSimulatedSNRs)):
-                ##ax1.plot(sortedAllSimulatedSNRs[num], allSimulated_percentage[num],'-', color = colours[1])#, alpha = 0.5)#, zorder = 4)
-                ##ax1.plot(sortedAllSimulatedSNRs[num], allSimulated_percentage[num],'-', color = colours[4])#, alpha = 0.5)#, zorder = 4)
                 ax1.plot(sortedAllSimulatedSNRs[num], allSimulated_percentage[num],'-', color = colours[4])#, alpha = 0.5)#, zorder = 4)
         meanLine, = ax1.plot(meanSimulatedSNR, all_percentage,'--', label = "Simulation Mean", color = 'blue')#)#, zorder = 6)
-        #backgroundLine, = ax1.plot(sortedAllSNRs, all_percentage,'-', label = "Background", linewidth = 1.5, color = colours[0])#, zorder = 5)
         backgroundLine, = ax1.plot(sortedAllSNRs, all_percentage,'-k', label = "Background", linewidth = 1)#, color = colours[1])#, zorder = 5)
     if pseudoEventSNRs and not background_only:
         ax1.plot(pseudoEventSNRs, pseudoEventPercentages,'b^', label = "Dummy On-Source")
     if eventSNRs and not background_only:
-        ##eventLine, = ax1.plot(eventSNRs, eventPercentages,'o', zorder = 6, label = "On-Source Event", markeredgecolor = None, markersize = 5, color = colours[1])#, color = colours[5])
         eventLine, = ax1.plot(eventSNRs, eventPercentages,'o', label = "On-Source Event", markeredgecolor = None, markersize = 5, color = colours[1])#, color = colours[5])
-        ##eventLine, = ax1.plot(eventSNRs, eventPercentages,'co', zorder = 6, label = "On-Source Event", markeredgecolor = "c")#, color = colours[5])
-    #plt.xlabel("SNR")
     ax1.set_xlabel("SNR")
     ymin = min(all_percentage)
-    #plt.ylim([ymin,1])
     ax1.set_ylim([ymin,1])
-    #plt.yscale('log')
     ax1.set_yscale('log')
-    #legend = ax1.legend(prop={'size':12})
     if background_only:
-        legend = ax1.legend([backgroundLine, simulationLine, meanLine], ["Background", "Simulated Backgrounds", "Simulation Mean"], prop={'size':7}, loc='lower left')
+        legend = ax1.legend([backgroundLine, simulationLine, meanLine], ["Background", "Gaussian Simulations", "Simulation Mean"], prop={'size':7})
     else:
-        legend = ax1.legend([backgroundLine, simulationLine, meanLine, eventLine], ["Background", "Simulated Backgrounds", "Simulation Mean", "On-Source Event"], prop={'size':10})
-    #legend.get_frame().set_alpha(0.5)
+        legend = ax1.legend([backgroundLine, simulationLine, meanLine, eventLine], ["Background", "Gaussian Simulations", "Simulation Mean", "On-Source Event"], prop={'size':10})
     plot_save_name = "/SNRvsFAP_all_clusters_semilogy_average_2"
     if background_only:
         plot_save_name += "_background"
     if pdf_latex_mode:
         plt.rc('text', usetex = True)
-        #plt.rc('text.latex', preamble = '\usepackage[T1]{fontenc}')
-        #if libertine:
-        #    plt.rc('text.latex', preamble = '\usepackage[T1]{fontenc}, \usepackage{fbb}, \usepackage[libertine]{newtxmath}, \usepackage[italic]{mathastext}, \MTsetmathskips{f}{5mu}{1mu}')
-        #else:
-        #    plt.rc('text.latex', preamble = '\usepackage[T1]{fontenc}, \usepackage[notextcomp]{kpfonts}')
         plt.rc('font', family = 'sarif')
-        #if libertine:
-        #    plt.rc('font', serif = 'Libertine')
-        #else:
-        #    plt.rc('font', serif = 'Palatino')
-        #plt.rc('font', serif = 'Palatino')
-        #plt.rc('font', serif = 'Libertine')
         plt.rc('font', serif = 'Computer Modern')
         plt.rc('font', weight = 'Normal')
         plt.rc('font', size = 9)#default 12
-        #plt.rc('font', size = 11)#default 12
-        #plt.ylabel("False Alarm Probability")
         ax1.set_ylabel("False Alarm Probability")
         fig.savefig(dir_name + plot_save_name + ".pdf", bbox_inches = 'tight', format='pdf')
     else:
-        #plt.ylabel("False Alarm Probability")
         ax1.set_ylabel("False Alarm Probability")
         fig.savefig(dir_name + plot_save_name, bbox_inches = 'tight')
     fig.clf()
-    #"""
 else:
     print("I'm using a quick and dirty get around to make the axes tick numbers be the right size. This also means the labels are also the same style. This may or may not be a good thing. People may prefer bolded axes labels.")
     fig = plt.figure(figsize=(plot_width, plot_width*3/4))
@@ -499,6 +342,3 @@ print(eventSNRs)
 print("FAPs of on-source:")
 print(eventPercentages)
 print(eventPercentages[0])
-#print(len(allSNRs))
-#print(allSNRs[999-212])
-#print(all_percentage[999-212])

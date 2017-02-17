@@ -9,16 +9,28 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.rcParams['legend.numpoints'] = 1
 
-trigger_number = 2471
+save_plots = True#True
+print_limit_detail = True#False
+background_version = True
+
+trigger_number = 2475
+
+psi_test = False#False#True#False
+
+second_plot_version = True
 
 background_based_upper_limits = True
 
-show_bayesian_average = True
+show_bayesian_average = False#True
 
-alternate_polarization = False#False#True
-polarized_version = False#True#False#True
+alternate_polarization = True#False#True#True#False#True # edge-on polarization version
+polarized_version = False#True#False#True#False#True  # polarization variation version
 polarized_separate = False#True
 polarized_test = False#True
+
+if psi_test:
+    alternate_polarization = False
+    polarized_version = True
 
 plot_mode = "shaded"#"plain"#"errorbar"#"shaded"
 show_legend = False# controls if legend is shown if 'plot_mode' is set to 'plain'
@@ -69,7 +81,8 @@ def getSNRandAlpha(file_path):
     temp_snr = temp_mat['stoch_out']['max_SNR'][0,0][0,0]
     temp_alpha = temp_mat['stoch_out']['params'][0,0][0,0]['stamp']['alpha'][0,0][0,0]
     temp_iota = float(temp_mat['stoch_out']['params'][0,0][0,0]['stamp']['iota'][0,0][0,0])
-    return [temp_snr, temp_alpha, temp_iota]
+    temp_psi = float(temp_mat['stoch_out']['params'][0,0][0,0]['stamp']['psi'][0,0][0,0])
+    return [temp_snr, temp_alpha, temp_iota, temp_psi]
 
 def find_path(directory, temp_tag):
     temp_files = [glueFileLocation(directory, x) for x in os.listdir(directory) if "job_pairs_with_low_SNR_" in x]
@@ -134,17 +147,50 @@ def find_surrounding_values(target_value, iota_values, SNR_values):
             #    print("iota value")
              #   print(iota_values[x])
 
+def parse_waveform_params(input_string):
+    temp_list = input_string.split(",")
+    f_0_val = temp_list[0][1:-1].strip()
+    f_0_unit = "Hz"
+    tau_val = temp_list[2][2:-1].strip()
+    tau_unit = "s"
+    return " ".join([f_0_val, f_0_unit, tau_val, tau_unit])
+
 #plot_mode = "plain"#"plain"#"errorbar"#"shaded"
 
 outputPath = "/home/quitzow/public_html/Magnetar/upper_limits/"
 
 #x_Limits = False
 if trigger_number == 2469:
-    thresholdSNRs = [5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466]
+    if not background_based_upper_limits:
+        # for upper limits based on open box
+        if alternate_polarization:
+            thresholdSNRs = [6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253]
+        else:
+            thresholdSNRs = [5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466]
+    else:
+        # for upper limits based on background only
+        if alternate_polarization:
+            thresholdSNRs = [7.60930175591, 7.60930175591, 7.60930175591, 7.60930175591, 7.60930175591, 7.60930175591]
+        else:
+            thresholdSNRs = [7.53977755475, 7.53977755475, 7.53977755475, 7.53977755475, 7.53977755475, 7.53977755475]
+    #thresholdSNRs = [5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466, 5.73448522466]
     #x_Limits = False
-    if polarized_version:
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/polarization_overview/stamp_analysis_anteproc-2015_12_3'],
-                    ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/polarization_overview/stamp_analysis_anteproc-2016_1_3']]#"""
+    if psi_test:
+        #baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_variation_imaginary/stamp_analysis_anteproc-2017_1_3']]
+        #baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_variation/stamp_analysis_anteproc-2017_1_6']]
+        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_variation/stamp_analysis_anteproc-2017_1_7']]
+        name_tag = "sgr_trigger_2469_variable_polarization_psi_test"
+        if abs_version:
+            name_tag += "_abs"
+        outputPath = glueFileLocation(outputPath, "sgr_trigger_2469/plot/polarization_variation/psi_test")
+        x_Limits = False
+    elif polarized_version:
+        if not second_plot_version:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/polarization_overview/stamp_analysis_anteproc-2015_12_3'],
+                        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/polarization_overview/stamp_analysis_anteproc-2016_1_3']]#"""
+        else:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/polarization_overview/stamp_analysis_anteproc-2015_12_3'],
+                        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_variation_imaginary/stamp_analysis_anteproc-2017_1_3_v2']]#"""
 
         name_tag = "sgr_trigger_2469_variable_polarization"
         if abs_version:
@@ -152,62 +198,84 @@ if trigger_number == 2469:
         outputPath = glueFileLocation(outputPath, "sgr_trigger_2469/polarization_overview")
         #x_Limits = False
     elif alternate_polarization:
-        thresholdSNRs = [6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253]
+        #thresholdSNRs = [6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253, 6.06371569253]
         #baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_10'],
         #        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_10']]
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_11',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v3',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_3_10/'],
-                    ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v3']]
+        if second_plot_version:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_4',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_4_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_4_v3',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_5',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_5_v2'],
+                        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_4',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_4_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_4_v3',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_5',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_5_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_7']]
+        else:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_11',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v3',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_3_10/'],
+                        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_13_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12_v3',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_9_15']]
 
         name_tag = "sgr_trigger_2469_alternate_polarization"
         outputPath = glueFileLocation(outputPath, "sgr_trigger_2469/plot/alternate_polarization/")
         #xLimits = [7e-23, 6e-22]#[9e-23, 6e-22]#[1e-22, 3e-21]#4e-21]#[6e-23, 1e-21]
     else:
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_10_23',# '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_10_31',
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v4',#],
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_19'],
+        baseDirs = [#['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_10_23',# '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_10_31',
+                 #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v4',#],
+                 #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_18_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_19'],
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_10_23',
                 # '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_10_31', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v3'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/stamp_analysis_anteproc-2015_11_1_v4'],
+                ["/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/background/stamp_analysis_anteproc-2016_11_29", "/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_400/background/stamp_analysis_anteproc-2016_11_29_v2"],
 
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_25', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v7', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v8'],
-                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_25', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v7', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v8',#],
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_11_19'],
+                #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_25', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v7', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v8',#],
+                # '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_11_19'],
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_25', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_26_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v6'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v7'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/stamp_analysis_anteproc-2015_10_29_v8'],
+                ["/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_400/background/stamp_analysis_anteproc-2016_12_3"],
 
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v5'],
-                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v5',#],
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_11_19'],
+                ##['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v5',#],
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_11_19'],
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22',
                 # '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_29_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v4'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/stamp_analysis_anteproc-2015_10_30_v5'],
+                ["/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_400/background/stamp_analysis_anteproc-2016_12_4"],
 
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_23', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_31', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v4'],
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_23', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_31', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v4'],
-                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_23', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_31', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/variation_test/stamp_analysis_anteproc-2015_11_15_v2',
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_18_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_19', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_19_v2'],
+                ##['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_23', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_31', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/variation_test/stamp_analysis_anteproc-2015_11_15_v2',
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_18_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_19', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_19_v2'],
                 #, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v4'],
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_23', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_10_31', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_1_v4',# '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5',
                 # '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_5_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v4'],
+                ["/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_150/tau_150/background/stamp_analysis_anteproc-2016_12_7"],
 
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_25', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_29'],
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_25', #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26',
                 # '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26_v2'],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_29'],
-                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_25', #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26',
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26_v2',#],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_29'],
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_11_19'],
+                ##['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_25', #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26',
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_26_v2',#],#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_10_29'],
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2015_11_19',#],
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2016_9_13', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/stamp_analysis_anteproc-2016_9_15'],
+                ["/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_450/tau_150/background/stamp_analysis_anteproc-2016_12_7"],
 
                 #['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30', #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v2',
                 # '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v3']]#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v4']]
-                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30', #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v2',
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v3',#]]#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v4']]
-                 '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_11_19', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_11_19_v2']]
+                ##['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_21_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30', #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v2',
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v3',#]]#, '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_10_30_v4']]
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/variation_test/stamp_analysis_anteproc-2015_11_18_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_11_19', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2015_11_19_v2',#]]
+                 ##'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/stamp_analysis_anteproc-2016_9_15']]
+                 ["/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/f0_750/tau_150/background/stamp_analysis_anteproc-2016_12_7"]]
 
         name_tag = "sgr_trigger_2469_testing_focus_40"
         outputPath += "sgr_trigger_2469/plot/"
@@ -220,7 +288,17 @@ elif trigger_number == 2471:
     else:
         # for upper limits based on background only
         thresholdSNRs = [7.21733013944, 7.21733013944, 7.21733013944, 7.21733013944, 7.21733013944, 7.21733013944]
-    if polarized_version:
+    if psi_test:
+        #baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_cancel_test/psi_test/stamp_analysis_anteproc-2016_12_18']]
+        #baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/polarization_variation/stamp_analysis_anteproc-2017_1_6']]
+        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/polarization_variation/stamp_analysis_anteproc-2017_1_7']]
+        name_tag = "sgr_trigger_2471_variable_polarization_psi_test"
+        if abs_version:
+            name_tag += "_abs"
+        outputPath = glueFileLocation(outputPath, "sgr_trigger_2471/plot/polarization_variation/psi_test")
+        x_Limits = False
+    elif polarized_version:
+        #if polarized_version:
 #        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/polarization_test/stamp_analysis_anteproc-2015_10_17',
 #                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/polarization_test/stamp_analysis_anteproc-2015_10_17_v2']]#"""
 
@@ -242,12 +320,21 @@ elif trigger_number == 2471:
         name_tag = "sgr_trigger_2471_alternate_polarization"
         outputPath = glueFileLocation(outputPath, "sgr_trigger_2471/plot/alternate_polarization/")#"""
     else:
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_8_v3'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2016_5_12'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_11_9_v2'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/stamp_analysis_anteproc-2015_10_18_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3','/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2016_5_27'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_11_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_11_8_v3'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v5']]#"""
+        if not background_version:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_6_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/stamp_analysis_anteproc-2015_11_8_v3'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2015_11_8_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/stamp_analysis_anteproc-2016_5_12'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/stamp_analysis_anteproc-2015_11_9_v2'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/stamp_analysis_anteproc-2015_10_18_v5', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2015_11_6_v3','/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/stamp_analysis_anteproc-2016_5_27'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_11_8', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_11_8_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/stamp_analysis_anteproc-2015_11_8_v3'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/stamp_analysis_anteproc-2015_11_9_v5']]#"""
+
+        else:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_400/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_400/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/background/stamp_analysis_anteproc-2016_12_15', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_400/background/stamp_analysis_anteproc-2016_12_15_v2'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_150/tau_150/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_450/tau_150/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2471/f0_750/tau_150/background/stamp_analysis_anteproc-2016_12_15']]#"""
 
         #thresholdSNRs = [5.78991295767, 5.78991295767, 5.78991295767, 5.78991295767, 5.78991295767, 5.78991295767]
         name_tag = "sgr_trigger_2471_testing_focus_40"
@@ -256,10 +343,29 @@ elif trigger_number == 2471:
         xLimits = [1e-22, 4e-21]
 
 elif trigger_number == 2475:
-    thresholdSNRs = [6.2449653625, 6.2449653625, 6.2449653625, 6.2449653625, 6.2449653625, 6.2449653625]
-    if polarized_version:
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/stamp_analysis_anteproc-2015_10_18_v9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/stamp_analysis_anteproc-2015_10_19'],
+    if not background_based_upper_limits:
+        # for upper limits based on open box
+        thresholdSNRs = [6.2449653625, 6.2449653625, 6.2449653625, 6.2449653625, 6.2449653625, 6.2449653625]
+    else:
+        # for upper limits based on background only
+        thresholdSNRs = [7.67671444966, 7.67671444966, 7.67671444966, 7.67671444966, 7.67671444966, 7.67671444966]
+    if psi_test:
+        #baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_cancel_test/psi_test/stamp_analysis_anteproc-2016_12_18']]
+        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_variation/stamp_analysis_anteproc-2017_1_6']]
+        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_variation/stamp_analysis_anteproc-2017_1_7']]
+        name_tag = "sgr_trigger_2475_variable_polarization_psi_test"
+        if abs_version:
+            name_tag += "_abs"
+        outputPath = glueFileLocation(outputPath, "sgr_trigger_2475/plot/polarization_variation/psi_test")
+        x_Limits = False
+    elif polarized_version:
+        if not second_plot_version:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/stamp_analysis_anteproc-2015_10_18_v9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/stamp_analysis_anteproc-2015_10_19'],
                     ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/stamp_analysis_anteproc-2015_10_19_v3']]#"""
+        else:
+            #/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_cancel_test/stamp_analysis_anteproc-2016_12_18
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_cancel_test/stamp_analysis_anteproc-2016_12_18'],
+                    ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_cancel_test/stamp_analysis_anteproc-2016_12_18_v2']]#"""
 
         name_tag = "sgr_trigger_2475_variable_polarization"
         if abs_version:
@@ -267,31 +373,47 @@ elif trigger_number == 2475:
         outputPath = glueFileLocation(outputPath, "sgr_trigger_2475/plot/polarization_variation")
         x_Limits = False
     elif alternate_polarization:
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_28'],
-                    ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_24_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27_v2',
-                     '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_28']]#,
-                     #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12']]
+        if not background_version:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_28'],
+                        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_24_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_27_v2',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_1_28',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_9_16']]#,
+                        #'/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/stamp_analysis_anteproc-2016_2_12']]
+        else:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_7',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_8'],
+                        ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_7',
+                        '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/polarization_version/background/stamp_analysis_anteproc-2017_1_8']]
 
         name_tag = "sgr_trigger_2475_alternate_polarization"
         outputPath = glueFileLocation(outputPath, "sgr_trigger_2475/plot/alternate_polarization/")
     else:
-        baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v4'],
-           #[['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v4'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v5'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v5'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2015_11_10', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2015_11_10_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2015_11_11'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/stamp_analysis_anteproc-2015_11_11'],
-            ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12_v4']]#"""
+        if not background_version:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v4'],
+            #[['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_9', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/stamp_analysis_anteproc-2015_11_11_v4'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/stamp_analysis_anteproc-2015_11_11_v5'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/stamp_analysis_anteproc-2015_11_12_v5'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2015_11_10', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2015_11_10_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2016_9_15', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/stamp_analysis_anteproc-2016_9_15_v2'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/stamp_analysis_anteproc-2015_10_22_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/stamp_analysis_anteproc-2015_11_11'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_10_22', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_11', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_11_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12_v2', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12_v3', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2015_11_12_v4', '/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/stamp_analysis_anteproc-2016_9_15']]#"""
+        else:
+            baseDirs = [['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_400/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_400/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_400/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_150/tau_150/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_450/tau_150/background/stamp_analysis_anteproc-2016_12_15'],
+                ['/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2475/f0_750/tau_150/background/stamp_analysis_anteproc-2016_12_15']]#"""
 
         name_tag = "sgr_trigger_2475_testing_focus_40"
         outputPath += "sgr_trigger_2475/plot/"
         xLimits = [6e-23, 1e-21]
 
-
+if second_plot_version:
+    outputPath = glueFileLocation(outputPath, "plot_2nd/")
 
 if plot_mode == "shaded":
     name_tag += "_shaded"
@@ -299,7 +421,12 @@ else:
     name_tag += "_thresholds"
 # final save modifier
 if trigger_number == 2469:
-    name_tag += "_20"
+    if not background_based_upper_limits:
+        name_tag += "_20"
+    else:
+        #name_tag += "_24_background"
+        #name_tag += "_25_background"
+        name_tag += "_26_background"
 elif trigger_number == 2471:
     if not background_based_upper_limits:
         # open box
@@ -309,11 +436,19 @@ elif trigger_number == 2471:
         #name_tag += "_20_background"
         #name_tag += "_21_background"
         #name_tag += "_22_background"
-        name_tag += "_23_background"
+        #name_tag += "_23_background"
+        #name_tag += "_24_background"
+        name_tag += "_25_background"
 elif trigger_number == 2475:
-    name_tag += "_20"
+    if not background_based_upper_limits:
+        name_tag += "_20"
+    else:
+        #name_tag += "_24_background"
+        name_tag += "_25_background"
 else:
     name_tag += "_4"#"_2"
+if psi_test:
+    name_tag += "_psi_test"
 
 threshold_percentages = [0.5, 0.9]
 #outputPath = "/home/quitzow/public_html/Magnetar/upper_limits/sgr_trigger_2469/plot"
@@ -327,7 +462,10 @@ threshold_percentages = [0.5, 0.9]
           'f0_450_tau_150',
           'f0_750_tau_150']"""
 if polarized_version:
-    labels = ['plus', 'cross']
+    if psi_test:
+        labels = ['psi test']
+    else:
+        labels = ['plus', 'cross']
 elif alternate_polarization:
     labels = [r'$f_0 = 150 \, \mathrm{Hz}, \tau = 400 \, \mathrm{s}$',
           r'$f_0 = 750 \, \mathrm{Hz}, \tau = 400 \, \mathrm{s}$']
@@ -492,7 +630,7 @@ for set_num in range(len(temp_data_sets)):
     orderedData[labels[set_num]] = temp_orderedData
 
 #better to start making this structure everytime and saving it instead of the list.
-def get_info(ordered_data, threshold_SNR, temp_temp_data):
+def get_info(ordered_data, threshold_SNR, temp_temp_data, waveform_label):
     #print('test')
     #print(ordered_data)
     test_lengths = [len(ordered_data[x]) for x in ordered_data]
@@ -509,10 +647,15 @@ def get_info(ordered_data, threshold_SNR, temp_temp_data):
         threshold_alphas = None
     #print([x for x in test_lengths])
     #print("test")
+    #print("testing")
+    print(waveform_label)
     print(test_lengths)
-    #print([x for x in ordered_data])
-    #print(ordered_data)
-    #print([x[0] for x in num_above_threshold])
+    #print(ordered_data.keys())
+    if print_limit_detail:
+        print([x[0] for x in num_above_threshold])
+        print([x for x in ordered_data])
+        #print(ordered_data)
+        #print([x[0] for x in num_above_threshold])
     percentiles = [num_above_threshold[x][0]/test_lengths[x] for x in range(len(test_lengths))]
     alphas_p = [x[1] for x in num_above_threshold]
     temp_indices = np.argsort(alphas_p)
@@ -630,8 +773,11 @@ def interpolate_threshold(proportions, alpha_values, threshold_proportion):
     plt.plot(actual_x_vals, y_vals_1, zorder = 7, alpha = 0.5, color = colours[num])
     plt.plot(actual_x_vals, y_vals_2, zorder = 7, alpha = 0.5, color = colours[num])#"""
 
+#print("test line")
+print("labels")
 print(labels)
-data_info = [get_info(orderedData[labels[num]], thresholdSNRs[num], temp_data_sets[num]) for num in range(len(labels))]
+#print("test line")
+data_info = [get_info(orderedData[labels[num]], thresholdSNRs[num], temp_data_sets[num], labels[num]) for num in range(len(labels))]
 
 #outputPath = glueFileLocation(options.baseDir, "job_pairs_with_low_SNR_" + options.tag + ".txt")
 #if not os.path.isfile(outputPath):
@@ -684,8 +830,9 @@ if not polarized_version:
                 plt.rc('text', usetex = True)
                 plt.rc('font', family = 'sarif')
                 plt.rc('font', serif = 'Computer Modern')
-            plt.savefig(glueFileLocation(outputPath, "upper_limit_estimate_" + name_tag + "_" + labels[num]), bbox_inches = 'tight')
-            plt.savefig(glueFileLocation(outputPath, "upper_limit_estimate_" + name_tag + "_" + labels[num])+ '.pdf', bbox_inches = 'tight', format='pdf')
+            if save_plots:
+                plt.savefig(glueFileLocation(outputPath, "upper_limit_estimate_" + name_tag + "_" + labels[num]), bbox_inches = 'tight')
+                plt.savefig(glueFileLocation(outputPath, "upper_limit_estimate_" + name_tag + "_" + labels[num])+ '.pdf', bbox_inches = 'tight', format='pdf')
             plt.clf()
 
     """temp_indices = np.argsort(alphas_p)
@@ -852,16 +999,20 @@ sorted_alphas_p = [alphas_p[x] for x in temp_indices]"""
     #    plt.ylabel("False Alarm Probability")
     #    plt.savefig(dir_name + "/SNRvsFAP_all_clusters_semilogy_average_2.pdf", bbox_inches = 'tight', format='pdf')
     #else:
-    plt.savefig(glueFileLocation(outputPath, "detection_efficiency_estimate_" + name_tag), bbox_inches = 'tight')
-    plt.savefig(glueFileLocation(outputPath, "detection_efficiency_estimate_" + name_tag) + '.pdf', bbox_inches = 'tight', format='pdf')
+    if save_plots:
+        plt.savefig(glueFileLocation(outputPath, "detection_efficiency_estimate_" + name_tag), bbox_inches = 'tight')
+        plt.savefig(glueFileLocation(outputPath, "detection_efficiency_estimate_" + name_tag) + '.pdf', bbox_inches = 'tight', format='pdf')
     plt.clf()
-
-    with open(glueFileLocation(outputPath, "threshold_values.txt"), "w") as outfile:
-        output_string = "\n".join("\n".join([x[0], "\n".join(" ".join(str(z) for z in y) for y in x[1])]) for x in threshold_list)
-        outfile.write(output_string)
+    if save_plots:
+        with open(glueFileLocation(outputPath, "threshold_values.txt"), "w") as outfile:
+            output_string = "\n".join("\n".join([parse_waveform_params(x[0]), "\n".join(" ".join(str(z) for z in y) for y in x[1])]) for x in threshold_list)
+            outfile.write(output_string)
 
 elif polarized_version:
     iotas = []
+    iotas_1 = []
+    iotas_2 = []
+    psis = []
     SNRs = []
     SNRs_1 = []
     SNRs_2 = []
@@ -883,6 +1034,7 @@ elif polarized_version:
         temp_iotas = []
         temp_iotas_1 = []
         temp_iotas_2 = []
+        temp_psis = []
         temp_min_SNRs = []
         temp_min_iotas = []
         #print(len(temp_data_sets))
@@ -900,8 +1052,12 @@ elif polarized_version:
             #SNRs+=[temp_SNR]
             temp_temp_SNRs = [x[y][0] for y in x]
             temp_temp_iotas = [x[y][2] for y in x]
+            if psi_test:
+                temp_temp_psis = [x[y][3] for y in x]
             temp_SNRs += temp_temp_SNRs
             temp_iotas += temp_temp_iotas
+            if psi_test:
+                temp_psis += temp_temp_psis
 
             temp_temp_SNRs_1 = [x[y][0] for y in x if 'job_1' in y]
             temp_temp_iotas_1 = [x[y][2] for y in x if 'job_1' in y]
@@ -936,9 +1092,12 @@ elif polarized_version:
         temp_cos_iotas_1 = [np.cos(np.deg2rad(x)) for x in temp_iotas_1]
         temp_cos_iotas_2 = [np.cos(np.deg2rad(x)) for x in temp_iotas_2]
         iotas+= [temp_iotas]
+        psis += [temp_psis]
         SNRs+= [temp_SNRs]
         SNRs_1+= [temp_SNRs_1]
         SNRs_2+= [temp_SNRs_2]
+        iotas_1 += [temp_iotas_1]
+        iotas_2 += [temp_iotas_2]
         cos_iotas += [temp_cos_iotas]
         cos_iotas_1 += [temp_cos_iotas_1]
         cos_iotas_2 += [temp_cos_iotas_2]
@@ -968,7 +1127,10 @@ elif polarized_version:
             plt.plot(cos_iotas_1[x], SNRs_1[x], 'x', label = labels[x])
             plt.plot(cos_iotas_2[x], SNRs_2[x], 'x', label = labels[x])
         elif abs_version:
-            plt.plot(cos_iotas[x], [abs(y) for y in SNRs[x]], 'x', label = labels[x], markersize=4)#, color = colours[x])
+            if psi_test:
+                plt.plot(psis[x], [abs(y) for y in SNRs[x]], 'x', label = labels[x], markersize=4)#, color = colours[x])
+            else:
+                plt.plot(cos_iotas[x], [abs(y) for y in SNRs[x]], 'x', label = labels[x], markersize=4)#, color = colours[x])
         else:
             plt.plot(cos_iotas[x], SNRs[x], 'x', label = labels[x], markersize=4)#, color = colours[x])
     if polarized_test:
@@ -977,7 +1139,10 @@ elif polarized_version:
     #plt.plot(cos_iotas, SNRs, 'x')
     #plt.yscale('log')
     #plt.xscale('log')
-    plt.xlabel(r"$\cos{\iota}$")
+    if psi_test:
+        plt.xlabel(r"$\psi$")
+    else:
+        plt.xlabel(r"$\cos{\iota}$")
     #plt.ylabel(r'$Strain \left(\frac{Counts}{\sqrt{Hz}}\right)$')
     #plt.ylabel('Strain [Counts / sqrt(Hz)]')
     plt.ylabel("SNR")
@@ -991,6 +1156,11 @@ elif polarized_version:
         plt.rc('text', usetex = True)
         plt.rc('font', family = 'sarif')
         plt.rc('font', serif = 'Computer Modern')
-    plt.savefig(glueFileLocation(outputPath, "SNR_vs_cos_iota_" + name_tag), bbox_inches = 'tight')
-    plt.savefig(glueFileLocation(outputPath, "SNR_vs_cos_iota_" + name_tag + '.pdf'), bbox_inches = 'tight', format='pdf')
+    if save_plots:
+        if psi_test:
+            plt.savefig(glueFileLocation(outputPath, "SNR_vs_psi_" + name_tag), bbox_inches = 'tight')
+            plt.savefig(glueFileLocation(outputPath, "SNR_vs_psi_" + name_tag + '.pdf'), bbox_inches = 'tight', format='pdf')
+        else:
+            plt.savefig(glueFileLocation(outputPath, "SNR_vs_cos_iota_" + name_tag), bbox_inches = 'tight')
+            plt.savefig(glueFileLocation(outputPath, "SNR_vs_cos_iota_" + name_tag + '.pdf'), bbox_inches = 'tight', format='pdf')
     plt.clf()
