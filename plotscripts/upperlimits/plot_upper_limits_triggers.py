@@ -17,7 +17,7 @@ background_based_upper_limits = True
 show_bayesian_average = False#True
 
 alternate_polarization = True#False#True#True#False#True # edge-on polarization version
-polarized_version = False#True#False#True#False#True  # polarization variation version
+polarized_version = True#False#True#False#True#False#True  # polarization variation version
 polarized_separate = False#True
 polarized_test = False#True
 
@@ -341,4 +341,5 @@ if not polarized_version:
     upper_limit_plot(orderedData, threshold_percentages, labels, thresholdSNRs, data_info, outputPath, colours, name_tag, error_confidence_level, additional_plots, onsourceJob, pretty_version, save_plots, plot_mode, show_bayesian_average, plot_interpolated_points, xLimits, lockPlot)
 
 elif polarized_version:
-    polarization_variation_plot()
+    #polarization_variation_plot()
+    polarization_variation_plot(temp_data_sets, labels, name_tag, outputPath, trigger_number, pretty_version, save_plots, psi_test, polarized_separate, abs_version, polarized_test)

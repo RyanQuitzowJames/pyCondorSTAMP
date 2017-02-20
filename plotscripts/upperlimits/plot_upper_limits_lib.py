@@ -46,7 +46,7 @@ def str_truncate(number, decimal_values = 2):
 def color_conversion(R, G, B):
     return (R/256, G/256, B/256)
 
-def find_surrounding_values(target_value, iota_values, SNR_values):
+def find_surrounding_values(target_value, iota_values, SNR_values, target_SNR_value):
     max_SNR_value = max(SNR_values)
     min_SNR_value = min(SNR_values)
     if not (max_SNR_value >= target_value) or not (min_SNR_value <= target_value) or min(iota_values) > 0:
@@ -386,7 +386,7 @@ def upper_limit_plot(ordered_data, threshold_percentages, labels, thresholdSNRs,
             output_string = "\n".join("\n".join([parse_waveform_params(x[0]), "\n".join(" ".join(str(z) for z in y) for y in x[1])]) for x in threshold_list)
             outfile.write(output_string)
 
-def polarization_variation_plot():
+def polarization_variation_plot(temp_data_sets, labels, name_tag, outputPath, trigger_number, pretty_version=True, save_plots=True, psi_test=False, polarized_separate=False, abs_version=False, polarized_test=False):
     iotas = []
     iotas_1 = []
     iotas_2 = []
@@ -438,8 +438,8 @@ def polarization_variation_plot():
             print(max(temp_temp_SNRs_2))
             if trigger_number == 2475:
                 target_SNR_value = 27.910364328766665
-                find_surrounding_values(target_SNR_value, temp_temp_iotas_1, temp_temp_SNRs_1)
-                find_surrounding_values(target_SNR_value, temp_temp_iotas_2, temp_temp_SNRs_2)
+                find_surrounding_values(target_SNR_value, temp_temp_iotas_1, temp_temp_SNRs_1, target_SNR_value)
+                find_surrounding_values(target_SNR_value, temp_temp_iotas_2, temp_temp_SNRs_2, target_SNR_value)
             for temp_num in range(len(temp_temp_iotas_1)):
                 if temp_temp_SNRs_1[temp_num] == temp_min_SNR_1:
                     temp_min_iotas += [temp_temp_iotas_1[temp_num]]
