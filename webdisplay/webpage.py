@@ -3,9 +3,11 @@ from shutil import copy2
 from optparse import OptionParser
 
 home_folder = os.path.expanduser("~")
-default_config_filepath = os.path.join(home_folder, ".pycondorstamp", "config.txt")
+default_config_filepath = os.path.join(home_folder, ".pycondorstamp", 
+                                        "config.txt")
 webfile_subdir = "webdisplay"
-webfiles = ["plot_results.html", "simple_ajax.js", "table_builder.js", "table_interact.js"]
+webfiles = ["plot_results.html", "simple_ajax.js", "table_builder.js", 
+                    "table_interact.js"]
 
 def copy_webfiles(target_directory, pycondorstamp_dir):
     for filename in webfiles:
@@ -18,10 +20,13 @@ def read_config_file(config_filepath):
         config = {line[0]: line[1] for line in temp_list}
     return config
     
-def load_conf_cp_webfiles(target_dir):
-    default_conf = read_config_file(default_config_filepath)
-    pycondorstamp_dir = default_conf["pycondorstamp_dir"]
+def load_pycondorstamp_dir():
 
+    return read_config_file(default_config_filepath)["pycondorstamp_dir"]
+
+    
+def load_conf_cp_webfiles(target_dir):
+    pycondorstamp_dir = load_pycondorstamp_dir()
     copy_webfiles(target_dir, pycondorstamp_dir)
 
 def main():
